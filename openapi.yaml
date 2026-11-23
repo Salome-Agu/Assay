@@ -401,6 +401,12 @@ components:
           description: >-
             True when this check could not reach a conclusion because a source
             it depends on was unreachable — not the same as finding nothing.
+        undetermined_source:
+          type: string
+          description: >-
+            The source (or comma-joined sources) that caused this finding to be
+            undetermined. Set explicitly by each check; never derived from
+            Reasoning text.
         undetermined_by_source:
           type: object
           additionalProperties:

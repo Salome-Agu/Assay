@@ -50,6 +50,7 @@ func (c CapabilityCheck) Run(_ context.Context, s *Subject) (Finding, error) {
 		// it non-attestable at attest.FromReport.
 		f.Severity = Unevaluated
 		f.Undetermined = true
+		f.UndeterminedSource = "horizon"
 		f.Reasoning = "Asset not found on the ledger, so no issuer capability could be read: the capability axis is unevaluated, not clear."
 		return f, nil
 	}
