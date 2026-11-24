@@ -29,6 +29,20 @@ func assertFuzzInvariants(t *testing.T, rec *httptest.ResponseRecorder, allowed 
 	}
 }
 
+// fuzzRequest builds a GET request for target, skipping inputs that cannot be
+// expressed as an HTTP request line at all (spaces, control characters):
+// httptest.NewRequest panics on those, and they never reach a handler in
+// production because the HTTP server rejects them first.
+func fuzzRequest(t *testing.T, target string) *http.Request {
+	t.Helper()
+	req, err := http.NewRequest(http.MethodGet, target, nil)
+	if err != nil || strings.ContainsAny(target, " \t\r\n") {
+		t.Skip("not a well-formed request target")
+	}
+	req.RequestURI = target
+	return req
+}
+
 // FuzzScanQuery sends arbitrary query strings to /api/v1/scan and verifies that
 // every response is JSON with a status documented in openapi.yaml for this
 // route (200, 400, 404, 502).
@@ -64,7 +78,7 @@ func FuzzScanQuery(f *testing.F) {
 	f.Fuzz(func(t *testing.T, query string) {
 		h := newTestServer()
 		rec := httptest.NewRecorder()
-		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/scan?"+query, nil))
+		h.ServeHTTP(rec, fuzzRequest(t, "/api/v1/scan?"+query))
 		assertFuzzInvariants(t, rec, allowed)
 	})
 }
@@ -93,7 +107,7 @@ func FuzzHistoryQuery(f *testing.F) {
 	f.Fuzz(func(t *testing.T, query string) {
 		h := newTestServer()
 		rec := httptest.NewRecorder()
-		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/history?"+query, nil))
+		h.ServeHTTP(rec, fuzzRequest(t, "/api/v1/history?"+query))
 		assertFuzzInvariants(t, rec, allowed)
 	})
 }
@@ -115,17 +129,17 @@ func FuzzExposureQuery(f *testing.F) {
 
 	// Documented statuses from openapi.yaml: 200, 400, 404, 429, 502.
 	allowed := map[int]bool{
-		http.StatusOK:               true,
-		http.StatusBadRequest:       true,
-		http.StatusNotFound:         true,
-		http.StatusTooManyRequests:  true,
-		http.StatusBadGateway:       true,
+		http.StatusOK:              true,
+		http.StatusBadRequest:      true,
+		http.StatusNotFound:        true,
+		http.StatusTooManyRequests: true,
+		http.StatusBadGateway:      true,
 	}
 
 	f.Fuzz(func(t *testing.T, query string) {
 		h := newExposureServer(t, &exposureHorizonStub{trustlines: []string{"USDC"}})
 		rec := httptest.NewRecorder()
-		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/exposure?"+query, nil))
+		h.ServeHTTP(rec, fuzzRequest(t, "/api/v1/exposure?"+query))
 		assertFuzzInvariants(t, rec, allowed)
 	})
 }

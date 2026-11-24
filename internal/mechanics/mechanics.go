@@ -857,4 +857,3 @@ func (e *Engine) Run(ctx context.Context, s *Subject) (*Report, error) {
 	sort.Strings(rep.CheckSet)
 	return rep, nil
 }
-
